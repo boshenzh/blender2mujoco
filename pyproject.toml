@@ -1,0 +1,10 @@
+[project]
+name = "blender2m"
+version = "0.1.0"
+description = "Add your description here"
+readme = "README.md"
+requires-python = ">=3.11"
+dependencies = [
+    "bpy>=4.5.1",
+    "mujoco>=3.3.5",
+]

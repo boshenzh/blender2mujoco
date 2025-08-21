@@ -1,0 +1,44 @@
+{
+  "fps": 24.0,
+  "sample_hz": 50.0,
+  "duration_sec": 4.94,
+  "joint_order": [
+    "shoulder_pan",
+    "shoulder_lift",
+    "elbow_flex",
+    "wrist_flex",
+    "wrist_roll",
+    "gripper"
+  ],
+  "axis_used": {
+    "shoulder_pan": "parent_X",
+    "shoulder_lift": "parent_X",
+    "elbow_flex": "parent_X",
+    "wrist_flex": "parent_X",
+    "wrist_roll": "parent_X",
+    "gripper": "parent_Y"
+  },
+  "units": {
+    "angles": "deg"
+  },
+  "frames": [
+    {
+      "time": 0.0,
+      "shoulder_pan": 0,
+      "shoulder_lift": 0,
+      "elbow_flex": 0.0,
+      "wrist_flex": 0.0,
+      "wrist_roll": 0.0,
+      "gripper": 0.0
+    },
+    {
+      "time": 0.2,
+      "shoulder_pan": -93.774,
+      "shoulder_lift": 90.0001,
+      "elbow_flex": 0.0,
+      "wrist_flex": 0.0,
+      "wrist_roll": -89.9934,
+      "gripper": 0.0
+    }
+  ]
+}

@@ -1,0 +1,178 @@
+# SO101 Robot Profile
+# Profile-driven configuration for Blender→MuJoCo conversion
+
+robot:
+  id: "SO101"
+  name: "SO101 6-DOF Robot Arm"
+  description: "6-DOF robot arm with parallel gripper"
+  
+  # Joint configuration
+  joints:
+    - name: "shoulder_pan"
+      type: "revolute"
+      limits: { min: -110.0, max: 110.0 }  # degrees (from URDF)
+      default: 0.0
+    - name: "shoulder_lift" 
+      type: "revolute"
+      limits: { min: -190.0, max: 10.0 }  # degrees (from URDF)
+      default: 0.0
+    - name: "elbow_flex"
+      type: "revolute" 
+      limits: { min: -10.0, max: 180.0 }  # degrees (from URDF)
+      default: 0.0
+    - name: "wrist_flex"
+      type: "revolute"
+      limits: { min: -95.0, max: 95.0 }  # degrees (from URDF)
+      default: 0.0
+    - name: "wrist_roll"
+      type: "revolute"
+      limits: { min: -160.0, max: 160.0 }  # degrees (from URDF)
+      default: 0.0
+    - name: "gripper"
+      type: "revolute"
+      limits: { min: -10.0, max: 100.0 }  # degrees (from URDF)
+      default: 0.0
+
+  # MuJoCo configuration
+  mujoco:
+    mjcf_file: "robots/so101/so101.xml"
+    timestep: 0.002  # seconds
+    default_sample_hz: 50.0
+    physics:
+      collision_detection: true
+      contact_force_threshold: 10.0  # N
+      max_contact_penetration: 0.001  # m
+    
+  # Blender export configuration  
+  blender:
+    # Expected armature and bone names in Blender file
+    armature_name: "auto"  # Auto-detect first armature 
+    
+    # Advanced joint extraction configuration
+    extraction_method: "advanced"  # "simple" or "advanced"
+    
+    # Bone mapping with advanced extraction configuration
+    # NOTE: Each joint is a separate armature object with a single bone named "Bone"
+    bone_mapping:
+      "shoulder_pan": 
+        armature_name: "shoulder_link"  # The armature object name
+        bone_name: "Bone"              # Always "Bone" in this file structure
+        extraction_method: "armature_rotation"  # Extract from armature rotation directly
+        rotation_axis: "z"  # Z-axis rotation for shoulder pan
+        calibration:
+          sign: 1
+          offset: 0.0
+          unwrap: true
+      "shoulder_lift": 
+        armature_name: "upper_arm_link"
+        bone_name: "Bone" 
+        extraction_method: "armature_rotation"
+        rotation_axis: "x"  # X-axis based on FCurve data
+        calibration:
+          sign: 1
+          offset: 0.0
+          unwrap: true
+      "elbow_flex": 
+        armature_name: "lower_arm_link"
+        bone_name: "Bone"
+        extraction_method: "armature_rotation"
+        rotation_axis: "x"  # ✅ FIXED! X-axis has the animation (7.69° range)
+        calibration:
+          sign: 1
+          offset: 0.0
+          unwrap: true
+      "wrist_flex": 
+        armature_name: "wrist_link"
+        bone_name: "Bone"
+        extraction_method: "armature_rotation"
+        rotation_axis: "x"  # X-axis based on FCurve data
+        calibration:
+          sign: 1
+          offset: 0.0
+          unwrap: true
+      "wrist_roll": 
+        armature_name: "wrist_link"
+        bone_name: "Bone"
+        extraction_method: "armature_rotation" 
+        rotation_axis: "z"  # Z-axis for wrist roll
+        calibration:
+          sign: 1
+          offset: 0.0
+          unwrap: true
+      "gripper": 
+        armature_name: "gripper_link"
+        bone_name: "Bone"
+        extraction_method: "armature_rotation"
+        rotation_axis: "z"  # Z-axis for gripper (FCurve shows minimal values, static joint)
+        calibration:
+          sign: 1
+          offset: 0.0
+          unwrap: false
+    
+    # Advanced extraction configuration
+    extraction_config:
+      coordinate_system: "blender_to_mujoco"
+      angle_unwrapping: true
+      smoothing_window: 5
+      world_matrix_extraction: true  # Use world matrices for accurate transforms
+      fallback_to_simple: true  # Fallback to simple method if advanced fails
+    
+    # Animation export settings
+    export:
+      frame_range: "auto"  # or [start, end]
+      sample_rate: 50.0  # Hz
+      coordinate_transform:
+        # Blender to MuJoCo coordinate conversion
+        rotation: [90, 0, 0]  # X-axis rotation in degrees
+        scale: 1.0
+      
+    # Validation rules
+    validation:
+      min_keyframes: 10
+      max_duration: 30.0  # seconds
+      check_joint_limits: true
+      check_continuity: true
+      smoothing: 
+        enable: true
+        window_size: 5
+
+  # Output artifacts configuration
+  artifacts:
+    animation_json:
+      format_version: "1.0"
+      coordinate_system: "mujoco"
+      units: { angle: "radians", position: "meters", time: "seconds" }
+    
+    sim_video:
+      resolution: [1920, 1080]
+      fps: 30
+      duration: "auto"  # match animation duration
+      camera:
+        position: [2.0, 2.0, 1.5]
+        target: [0.0, 0.0, 0.5]
+    
+    metrics:
+      track_joint_velocities: true
+      track_joint_accelerations: true
+      track_end_effector_pose: true
+      track_collision_forces: true
+      export_frequency: 100.0  # Hz
+
+# Processing pipeline configuration
+pipeline:
+  steps:
+    - name: "validate_blend"
+      timeout: 30  # seconds
+    - name: "extract_animation" 
+      timeout: 120
+    - name: "validate_trajectory"
+      timeout: 30
+    - name: "run_simulation"
+      timeout: 300
+    - name: "generate_artifacts"
+      timeout: 60
+  
+  error_handling:
+    retry_attempts: 2
+    cleanup_on_failure: true
+    preserve_logs: true
