@@ -168,6 +168,20 @@ def main():
         raise SystemExit(f"[ERROR] end_frame({f1}) < start_frame({f0})")
 
     depsgraph = bpy.context.evaluated_depsgraph_get()
+    # --- Baseline (URDF zero) measurement ---
+    # Remember current frame to restore later
+    frame_prev = scene.frame_current
+
+    # Evaluate at baseline frame (URDF zero)
+    scene.frame_set(0); depsgraph.update() #NOTE: I assume animator start animate from frame 1; so frame 0 matches the urdf zero position. 
+
+    baseline_deg = {}
+    for obj_name, joint in link_to_joint.items():
+        obj = bpy.data.objects[obj_name]
+        ang0 = twist_about_axis(obj, per_obj_axis[obj_name])  # radians
+        baseline_deg[joint] = math.degrees(ang0)
+
+
     scene.frame_set(f0); depsgraph.update()
 
     # Effective sign map (combine constant + optional CLI overrides)
@@ -204,8 +218,9 @@ def main():
             for obj_name, joint in link_to_joint.items():
                 obj = bpy.data.objects[obj_name]
                 ang_rad = twist_about_axis(obj, per_obj_axis[obj_name])
-                val_deg = math.degrees(ang_rad) - zero_offset_deg[joint]
+                val_deg = math.degrees(ang_rad) - baseline_deg[joint]
                 row[joint] = sign_map.get(joint, 1) * val_deg
+
             frames.append(row)
         sample_hz = fps
         duration_sec = (f1 - f0) / float(fps)
@@ -225,7 +240,8 @@ def main():
             for obj_name, joint in link_to_joint.items():
                 obj = bpy.data.objects[obj_name]
                 ang_rad = twist_about_axis(obj, per_obj_axis[obj_name])
-                val_deg = math.degrees(ang_rad) - zero_offset_deg[joint]
+
+                val_deg = math.degrees(ang_rad) - baseline_deg[joint]
                 row[joint] = sign_map.get(joint, 1) * val_deg
             frames.append(row)
 
